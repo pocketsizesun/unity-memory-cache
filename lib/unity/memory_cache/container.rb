@@ -52,10 +52,8 @@ module Unity
 
       def cleanup
         @mutex.synchronize do
-          @storage.keys.each do |key|
-            next unless @storage[key].expired?
-
-            @storage.delete(key)
+          @storage.reject! do |_, value|
+            value.expired?
           end
         end
       end
@@ -77,7 +75,9 @@ module Unity
 
       def set(key, value, ex: nil, exat: nil)
         @mutex.synchronize do
-          @storage[key] = Entry.new(value, ex: ex || @entry_expires_after, exat: exat)
+          @storage[key] = Entry.new(
+            value, ex: ex || @entry_expires_after, exat: exat
+          )
         end
 
         value
@@ -108,9 +108,9 @@ module Unity
 
       def key?(key)
         entry = @storage[key]
-        return false if entry.nil?
+        return false if entry.nil? || entry.expired?
 
-        !entry.expired?
+        true
       end
 
       def fetch(key, ex: nil, exat: nil, &block)
