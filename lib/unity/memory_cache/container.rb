@@ -80,7 +80,7 @@ module Unity
           @storage[key] = Entry.new(value, ex: ex || @entry_expires_after, exat: exat)
         end
 
-        true
+        value
       end
 
       def delete(key)
@@ -104,6 +104,22 @@ module Unity
 
       def values
         @storage.values.freeze
+      end
+
+      def key?(key)
+        entry = @storage[key]
+        return false if entry.nil?
+
+        !entry.expired?
+      end
+
+      def fetch(key, ex: nil, exat: nil, &block)
+        entry = @storage[key]
+        if entry.nil? || entry.expired?
+          return set(key, block.call, ex: ex, exat: exat)
+        end
+
+        entry.value
       end
 
       private
